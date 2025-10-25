@@ -3,6 +3,9 @@
 import { useState } from "react";
 import Image from "next/image";
 import { X } from "lucide-react";
+import { useSession, authClient } from "@/lib/auth-client";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 const navLinks = [
   { href: "/precios", label: "Precios" },
@@ -12,6 +15,20 @@ const navLinks = [
 
 const NavigationHeader = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { data: session, isPending, refetch } = useSession();
+  const router = useRouter();
+
+  const handleSignOut = async () => {
+    const { error } = await authClient.signOut();
+    if (error?.code) {
+      toast.error("Error al cerrar sesión");
+    } else {
+      localStorage.removeItem("bearer_token");
+      refetch();
+      router.push("/");
+      toast.success("Sesión cerrada exitosamente");
+    }
+  };
 
   return (
     <header className="fixed inset-x-0 top-0 z-20 h-16 bg-white border-b border-neutral-200">
@@ -49,32 +66,62 @@ const NavigationHeader = () => {
         
         <aside className="flex items-center">
           <div className="hidden lg:flex items-center gap-x-2">
-            <a
-              href="https://dashboard.maspedidos.mx/login"
-              className="group flex items-center gap-1 h-9 px-3.5 font-medium text-base text-neutral-800 hover:opacity-60 transition-opacity"
-            >
-              Iniciar sesión
-              <Image
-                src="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/test-clones/1ce89cf7-ea9c-48ee-a9cc-e080511067f7-maspedidos-mx/assets/svgs/arrow_forward-3.svg"
-                alt="arrow forward"
-                width={14}
-                height={14}
-                className="group-hover:translate-x-0.5 transition-transform duration-100"
-              />
-            </a>
-            <a
-              href="https://dashboard.maspedidos.mx/signup"
-              className="group inline-flex items-center justify-center gap-1 rounded-full h-9 px-3.5 text-sm font-medium bg-primary text-primary-foreground shadow hover:bg-[#2D9A5F] transition-colors"
-            >
-              Probar gratis
-              <Image
-                src="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/test-clones/1ce89cf7-ea9c-48ee-a9cc-e080511067f7-maspedidos-mx/assets/svgs/arrow_forward-3.svg"
-                alt="arrow forward"
-                width={14}
-                height={14}
-                className="group-hover:translate-x-0.5 transition-transform duration-100"
-              />
-            </a>
+            {isPending ? (
+              <div className="h-9 px-3.5 flex items-center text-neutral-600">
+                Cargando...
+              </div>
+            ) : session?.user ? (
+              <>
+                <a
+                  href="/dashboard"
+                  className="group flex items-center gap-1 h-9 px-3.5 font-medium text-base text-neutral-800 hover:opacity-60 transition-opacity"
+                >
+                  Dashboard
+                  <Image
+                    src="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/test-clones/1ce89cf7-ea9c-48ee-a9cc-e080511067f7-maspedidos-mx/assets/svgs/arrow_forward-3.svg"
+                    alt="arrow forward"
+                    width={14}
+                    height={14}
+                    className="group-hover:translate-x-0.5 transition-transform duration-100"
+                  />
+                </a>
+                <button
+                  onClick={handleSignOut}
+                  className="group inline-flex items-center justify-center gap-1 rounded-full h-9 px-3.5 text-sm font-medium border border-neutral-200 bg-white shadow hover:border-neutral-400 transition-colors"
+                >
+                  Cerrar sesión
+                </button>
+              </>
+            ) : (
+              <>
+                <a
+                  href="/login"
+                  className="group flex items-center gap-1 h-9 px-3.5 font-medium text-base text-neutral-800 hover:opacity-60 transition-opacity"
+                >
+                  Iniciar sesión
+                  <Image
+                    src="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/test-clones/1ce89cf7-ea9c-48ee-a9cc-e080511067f7-maspedidos-mx/assets/svgs/arrow_forward-3.svg"
+                    alt="arrow forward"
+                    width={14}
+                    height={14}
+                    className="group-hover:translate-x-0.5 transition-transform duration-100"
+                  />
+                </a>
+                <a
+                  href="/register"
+                  className="group inline-flex items-center justify-center gap-1 rounded-full h-9 px-3.5 text-sm font-medium bg-primary text-primary-foreground shadow hover:bg-[#2D9A5F] transition-colors"
+                >
+                  Probar gratis
+                  <Image
+                    src="https://slelguoygbfzlpylpxfs.supabase.co/storage/v1/object/public/test-clones/1ce89cf7-ea9c-48ee-a9cc-e080511067f7-maspedidos-mx/assets/svgs/arrow_forward-3.svg"
+                    alt="arrow forward"
+                    width={14}
+                    height={14}
+                    className="group-hover:translate-x-0.5 transition-transform duration-100"
+                  />
+                </a>
+              </>
+            )}
           </div>
           
           <div className="lg:hidden ml-2">
@@ -113,20 +160,45 @@ const NavigationHeader = () => {
               </a>
             ))}
             <div className="border-t border-neutral-200 my-2"></div>
-            <a
-              href="https://dashboard.maspedidos.mx/login"
-              onClick={() => setIsMenuOpen(false)}
-              className="block px-3 py-2 rounded-md text-base font-medium text-neutral-800 hover:bg-neutral-100"
-            >
-              Iniciar sesión
-            </a>
-            <a
-              href="https://dashboard.maspedidos.mx/signup"
-              onClick={() => setIsMenuOpen(false)}
-              className="group mt-2 block w-full text-center rounded-full py-2 px-3.5 text-sm font-medium bg-primary text-primary-foreground shadow hover:bg-[#2D9A5F] transition-colors"
-            >
-              Probar gratis
-            </a>
+            {isPending ? (
+              <div className="px-3 py-2 text-neutral-600">Cargando...</div>
+            ) : session?.user ? (
+              <>
+                <a
+                  href="/dashboard"
+                  onClick={() => setIsMenuOpen(false)}
+                  className="block px-3 py-2 rounded-md text-base font-medium text-neutral-800 hover:bg-neutral-100"
+                >
+                  Dashboard
+                </a>
+                <button
+                  onClick={() => {
+                    setIsMenuOpen(false);
+                    handleSignOut();
+                  }}
+                  className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-neutral-800 hover:bg-neutral-100"
+                >
+                  Cerrar sesión
+                </button>
+              </>
+            ) : (
+              <>
+                <a
+                  href="/login"
+                  onClick={() => setIsMenuOpen(false)}
+                  className="block px-3 py-2 rounded-md text-base font-medium text-neutral-800 hover:bg-neutral-100"
+                >
+                  Iniciar sesión
+                </a>
+                <a
+                  href="/register"
+                  onClick={() => setIsMenuOpen(false)}
+                  className="group mt-2 block w-full text-center rounded-full py-2 px-3.5 text-sm font-medium bg-primary text-primary-foreground shadow hover:bg-[#2D9A5F] transition-colors"
+                >
+                  Probar gratis
+                </a>
+              </>
+            )}
           </nav>
         </div>
       )}
